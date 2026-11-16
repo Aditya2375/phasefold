@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'none'"
+    />
+    <meta
+      name="description"
+      content="A train-only two-means stock regime lab. Learn on the past, freeze the model, inspect the holdout. Synthetic data, no trades."
+    />
+    <title>Phasefold - learn the past, hold the line</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#lab">Skip to lab</a>
+    <header>
+      <a href="#" class="brand"
+        ><span aria-hidden="true">◧</span> phasefold
+        <small>RESEARCH / 01</small></a
+      >
+      <nav aria-label="Main">
+        <a href="#method">The method</a><a href="#limits">The limits</a
+        ><a href="https://github.com/Aditya2375/phasefold">Source ↗</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">A LEARNED STOCK-REGIME EXPERIMENT</p>
+          <h1>Learn the past.<br /><i>Hold the line.</i></h1>
+          <p class="intro">
+            Two clusters. One information boundary. Fit the model on what came
+            before, then see what it calls the days it hasn't seen.
+          </p>
+          <a href="#lab" class="link">Open the experiment <span>↓</span></a>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-title">
+            <span>FIT → FREEZE → ASSIGN</span><span>K = 2</span>
+          </div>
+          <div
+            class="abstract-chart"
+            aria-label="Conceptual illustration of two feature clusters divided by a frozen training boundary"
+          >
+            <div class="cloud one">
+              <i></i><i></i><i></i><i></i><i></i><b>+</b>
+            </div>
+            <div class="cloud two">
+              <i></i><i></i><i></i><i></i><i></i><b>+</b>
+            </div>
+            <div class="boundary"></div>
+            <span class="past">PAST</span><span class="unseen">UNSEEN</span>
+          </div>
+          <p>The boundary is the experiment.</p>
+          <span class="hero-note">Illustration, not model output.</span>
+        </div>
+      </section>
+      <div class="strip">
+        <span>Synthetic stock log returns</span
+        ><span>Train-only scaler + centroids</span
+        ><span>Descriptive clusters, not trade signals</span>
+      </div>
+      <section id="lab" tabindex="-1">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">01 / THE EXPERIMENT</p>
+            <h2>Meet the model's blind spot.</h2>
+          </div>
+          <p>
+            These are invented returns, not a market feed. Four controls expose
+            what two-means can learn, what it forces apart and what a frozen
+            model misses.
+          </p>
+        </div>
+        <div class="lab">
+          <aside>
+            <h3>Set up the split</h3>
+            <label for="scenario">Synthetic control</label
+            ><select id="scenario">
+              <option value="alternating">Alternating volatility</option>
+              <option value="shift">Unseen holdout shift</option>
+              <option value="null">One-state noise</option>
+              <option value="flat">Flat / degenerate</option></select
+            ><label for="seed">Reproducible seed</label
+            ><input
+              id="seed"
+              value="29"
+              inputmode="numeric"
+              maxlength="10"
+            /><label for="window">Trailing window</label
+            ><select id="window">
+              <option value="5">5 observations</option>
+              <option value="20" selected>20 observations</option>
+              <option value="40">40 observations</option>
+              <option value="60">60 observations</option></select
+            ><label for="train-end">Freeze at boundary</label
+            ><select id="train-end">
+              <option value="180">t = 180</option>
+              <option value="240" selected>t = 240</option>
+              <option value="300">t = 300</option></select
+            ><button id="apply" class="primary">Fit & freeze →</button>
+            <p id="dirty" hidden role="status">
+              Inputs changed. Displayed results are from the previous run; apply
+              to replace them. Inspection is paused.
+            </p>
+            <p id="error" role="alert"></p>
+            <div class="aside-section">
+              <span class="eyebrow">INFORMATION RULE</span>
+              <p>
+                At boundary <b>t</b>, features use returns
+                <b>[t − window, t)</b>. Return t is excluded.
+              </p>
+              <p>
+                Fit rows use <b>t &lt; freeze</b>. Only holdout rows use a model
+                already fixed at their boundary.
+              </p>
+            </div>
+            <div class="aside-section">
+              <span class="eyebrow">NO HINDSIGHT ALIBI</span>
+              <p>
+                Fit-period labels are retrospective. Overlapping windows are
+                dependent. A chronological split is not proof of market skill.
+              </p>
+            </div>
+          </aside>
+          <div class="workspace">
+            <div class="workspace-head">
+              <div>
+                <p class="eyebrow" id="run-label">ALTERNATING / SEED 29</p>
+                <h3 id="model-status">Model ready.</h3>
+              </div>
+              <span class="badge" id="frozen">FROZEN AT 240</span>
+            </div>
+            <p id="scenario-note" class="run-note"></p>
+            <div class="metrics">
+              <div><span>Fit feature rows</span><b id="fit-count">220</b></div>
+              <div>
+                <span>Holdout C0 / C1</span><b id="hold-count">0 / 0</b>
+              </div>
+              <div><span>Holdout switches</span><b id="switches">0</b></div>
+              <div><span>Fit SSE</span><b id="inertia">0</b></div>
+            </div>
+            <p class="hint">
+              C0/C1 are ordered by fitted volatility centroid, then drift. They
+              are not bull/bear states. SSE is a standardized squared-distance
+              objective, not prediction error or a probability.
+            </p>
+            <div class="panel-title">
+              <h3>Feature space</h3>
+              <span>trailing mean × sample volatility</span>
+            </div>
+            <div class="legend">
+              <span><i class="c0"></i>C0</span><span><i class="c1"></i>C1</span
+              ><span>● fit · ○ holdout · + centroid</span>
+            </div>
+            <canvas
+              id="scatter"
+              role="img"
+              aria-label="Scatter of trailing mean and sample standard deviation, colored by learned cluster. Fit points filled, holdout outlined. Full values in point inspector and ledger."
+            ></canvas>
+            <p class="hint">
+              Both axes are raw daily log-return basis points. Model distances
+              use train-standardized coordinates. Equal pixels on the two axes
+              do not mean equal model distance. Use the row inspector for exact
+              values.
+            </p>
+            <div class="panel-title timeline-title">
+              <h3>Assignment through time</h3>
+              <span>fit labels are retrospective</span>
+            </div>
+            <canvas
+              id="timeline"
+              role="img"
+              aria-label="Chronological learned cluster labels with a marked fit and holdout boundary. Exact labels are in the point ledger."
+            ></canvas>
+            <p class="hint">
+              No future returns enter a row's feature. Fit-period parameters
+              still come from the full fit interval. Colors are assignments, not
+              confidence or generator-state truth.
+            </p>
+            <div class="inspector">
+              <div class="panel-title">
+                <h3>Inspect a boundary</h3>
+                <output id="selected-label" for="point">t = 240</output>
+              </div>
+              <label for="point">Boundary t (one row at a time)</label
+              ><input id="point" type="range" min="20" max="419" value="240" />
+              <div class="inspect-grid" id="point-info"></div>
+            </div>
+            <div class="panel-title details-title">
+              <h3>Frozen parameters</h3>
+              <span>learned from fit rows only</span>
+            </div>
+            <div id="parameters"></div>
+            <details>
+              <summary>Selected restart's objective trace</summary>
+              <p class="hint">
+                Four deterministic initializations; the lowest final fit SSE
+                wins. Not a global optimum guarantee. Values after each centroid
+                update and reassignment.
+              </p>
+              <ol id="trace"></ol>
+            </details>
+            <details>
+              <summary>Full boundary ledger</summary>
+              <p class="hint">
+                All non-warm-up feature rows, in order. No omitted losing
+                periods and no forward-return outcome labels.
+              </p>
+              <div id="ledger"></div>
+            </details>
+          </div>
+        </div>
+      </section>
+      <section id="method">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">02 / HOW THE LINE IS HELD</p>
+            <h2>Learn once.<br />Assign forward.</h2>
+          </div>
+          <p>
+            This lab learns its centroids. It does not borrow fixed thresholds
+            or a supplied Markov model. The information boundary stays visible.
+          </p>
+        </div>
+        <div class="method-grid">
+          <article>
+            <span>01 / FEATURES</span>
+            <h3>Look backward.</h3>
+            <p>
+              Trailing mean and sample standard deviation use only earlier log
+              returns. The first window is warm-up. No current or forward return
+              chooses its own label.
+            </p>
+          </article>
+          <article>
+            <span>02 / FIT</span>
+            <h3>Learn the geometry.</h3>
+            <p>
+              Compute training means and population standard deviations.
+              Standardize both features. Run original two-means from four
+              deterministic starts; retain the lowest fit objective.
+            </p>
+          </article>
+          <article>
+            <span>03 / FREEZE</span>
+            <h3>Stop learning.</h3>
+            <p>
+              Freeze scaler and centroids at the split. Holdout rows go to the
+              nearest centroid without refitting. Fit-period assignments use
+              hindsight parameters and are labeled as such.
+            </p>
+          </article>
+          <article>
+            <span>04 / QUESTION</span>
+            <h3>Try to break the story.</h3>
+            <p>
+              One-state noise still gets split. Flat data may occupy only one
+              cluster. An unseen shift can be far from both centers. Two colors
+              do not prove two economic regimes.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section id="limits" class="limits">
+        <div>
+          <p class="eyebrow">03 / WHAT THIS DOES NOT SAY</p>
+          <h2>A clustering lab.<br />Not a trading edge.</h2>
+          <p>
+            No actual stock observations, performance backtest, portfolio,
+            position, forecast, broker key or trade execution. Synthetic
+            examples are deliberately constructed teaching controls.
+          </p>
+          <a class="link" href="https://github.com/Aditya2375/phasefold"
+            >Read the exact contract <span>↗</span></a
+          >
+        </div>
+        <dl>
+          <div>
+            <dt>Clusters are a modeling choice</dt>
+            <dd>
+              K is fixed at two. Euclidean mean/volatility geometry,
+              standardization, window length, initialization and fit interval
+              shape the result. Four starts do not ensure a global optimum;
+              outliers and tiny fit variance can dominate.
+            </dd>
+          </div>
+          <div>
+            <dt>Holdout is not a tuning license</dt>
+            <dd>
+              Changing inputs after viewing the holdout is descriptive
+              exploration, not independent model validation. Rolling windows
+              overlap. There are no p-values, confidence intervals, probability
+              calibration or real-market generalization claims.
+            </dd>
+          </div>
+          <div>
+            <dt>Distance is not confidence</dt>
+            <dd>
+              The inspector reports squared nearest-centroid distance in
+              standardized feature space. It is not a posterior probability, an
+              economic diagnosis or a calibrated out-of-distribution test.
+            </dd>
+          </div>
+          <div>
+            <dt>Local and disposable</dt>
+            <dd>
+              All computation runs in this page. No feed, upload, storage,
+              telemetry or paid service. Resetting inputs or closing loses
+              state. The static host may log normal asset requests. Native
+              Python and browser JavaScript are independent implementations.
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+    <footer>
+      <span>phasefold / an original quant research study</span
+      ><span
+        >By Aditya Kulkarni ·
+        <a href="https://github.com/Aditya2375/phasefold">MIT source</a></span
+      >
+    </footer>
+  </body>
+</html>
